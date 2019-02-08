@@ -128,7 +128,9 @@ let make = _children => {
              </div>
            )
          |> ReasonReact.array}
-        <button onClick={_event => self.send(AddShoppingItem)}>
+        <button
+          onClick={_event => self.send(AddShoppingItem)}
+          disabled={self.state.isLoading}>
           {ReasonReact.string("Add shopping item")}
         </button>
       </div>,
