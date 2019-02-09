@@ -1,1 +1,1 @@
-ReactDOMRe.renderToElementWithId(<ShoppingList />, "shopping-list");
+ReactDOMRe.renderToElementWithId(<Root />, "shopping-list");
