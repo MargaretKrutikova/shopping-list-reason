@@ -17,7 +17,7 @@ type action =
   | ShoppingListFetchSuccess(shoppingList)
   | ShoppingListFetchError
   | AddShoppingItem
-  | ChangeShoppingItemProperty(int, string, shoppingItemProperty);
+  | ChangeShoppingItemProperty(int, shoppingItemProperty, string);
 
 let component = ReasonReact.reducerComponent("ShoppingList");
 
@@ -79,7 +79,7 @@ let make = _children => {
         let items = Array.append(state.shoppingList.items, [|newItem|]);
         ReasonReact.Update(updateItems(state, items));
 
-      | ChangeShoppingItemProperty(index, newValue, property) =>
+      | ChangeShoppingItemProperty(index, property, newValue) =>
         let updateFn =
           switch (property) {
           | Product => (item => {...item, product: newValue})
@@ -92,47 +92,40 @@ let make = _children => {
       },
 
     render: self =>
-      <div>
+      <>
+        <h1> {ReasonReact.string("Shopping List")} </h1>
         {self.state.isLoading ?
            <span> {ReasonReact.string("...Loading")} </span> :
            ReasonReact.null}
-        {self.state.shoppingList.items
-         ->Belt.Array.mapWithIndex((index, item) =>
-             <div key={string_of_int(index)}>
-               <input
-                 placeholder="Name"
-                 value={item.product}
-                 onChange={event =>
-                   self.send(
-                     ChangeShoppingItemProperty(
-                       index,
-                       ReactEvent.Form.target(event)##value,
-                       Product,
-                     ),
-                   )
-                 }
-               />
-               <input
-                 placeholder="Note"
-                 value={item.note}
-                 onChange={event =>
-                   self.send(
-                     ChangeShoppingItemProperty(
-                       index,
-                       ReactEvent.Form.target(event)##value,
-                       Note,
-                     ),
-                   )
-                 }
-               />
-             </div>
-           )
-         |> ReasonReact.array}
+        <div
+          className=Css.(
+            style([
+              media(Breakpoints.up(Md), [width(pct(60.0))]),
+              media(Breakpoints.up(Lg), [width(pct(40.0))]),
+            ])
+          )>
+          {self.state.shoppingList.items
+           |> Array.mapi((index, item) =>
+                <ShoppingItem
+                  key={string_of_int(index)}
+                  item
+                  onProductChange={value =>
+                    self.send(
+                      ChangeShoppingItemProperty(index, Product, value),
+                    )
+                  }
+                  onNoteChange={value =>
+                    self.send(ChangeShoppingItemProperty(index, Note, value))
+                  }
+                />
+              )
+           |> ReasonReact.array}
+        </div>
         <button
           onClick={_event => self.send(AddShoppingItem)}
           disabled={self.state.isLoading}>
           {ReasonReact.string("Add shopping item")}
         </button>
-      </div>,
+      </>,
   };
 };
