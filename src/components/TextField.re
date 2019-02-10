@@ -3,7 +3,16 @@ let component = ReasonReact.statelessComponent("Input");
 let make = (~placeholder="", ~value, ~onChange, _children) => {
   ...component,
   render: _self =>
-    <div className=Css.(style([marginBottom(px(Theme.spacingPx.small))]))>
+    <div
+      className=Css.(
+        style([
+          marginBottom(px(Theme.spacingPx.xsmall)),
+          media(
+            Breakpoints.up(Md),
+            [marginBottom(px(Theme.spacingPx.small))],
+          ),
+        ])
+      )>
       <input
         type_="text"
         placeholder
@@ -11,15 +20,27 @@ let make = (~placeholder="", ~value, ~onChange, _children) => {
         onChange
         className=Css.(
           style([
-            borderWidth(zero),
-            borderBottom(px(1), solid, black),
+            border(zero, none, transparent),
             outline(zero, `none, white),
-            padding2(~v=px(7), ~h=px(5)),
-            fontSize(px(16)),
+            padding3(~top=px(10), ~h=px(7), ~bottom=px(6)),
+            fontSize(px(18)),
             width(pct(100.)),
             color(Theme.colors.greyDefault),
             boxSizing(borderBox),
-            focus([borderBottom(px(2), solid, black)]),
+            borderRadius(px(0)),
+            transitions([
+              transition(
+                ~duration=200,
+                ~timingFunction=easeInOut,
+                "border-bottom-color",
+              ),
+            ]),
+            borderBottom(px(1), solid, `rgba((0, 0, 0, 0.42))),
+            focus([
+              borderBottomWidth(px(2)),
+              borderBottomColor(`rgba((0, 0, 0, 0.8))),
+              paddingBottom(px(5)),
+            ]),
           ])
         )
       />
