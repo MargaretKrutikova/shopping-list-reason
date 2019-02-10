@@ -1,131 +1,23 @@
-open Api;
-open Utils;
 open Types;
 
-type state = {
-  shoppingList,
-  isLoading: bool,
-  error: option(string),
-};
+let component = ReasonReact.statelessComponent("ShoppingList");
 
-type shoppingItemProperty =
-  | Product
-  | Note;
-
-type action =
-  | ShoppingListFetch
-  | ShoppingListFetchSuccess(shoppingList)
-  | ShoppingListFetchError
-  | AddShoppingItem
-  | ChangeShoppingItemProperty(int, shoppingItemProperty, string);
-
-let component = ReasonReact.reducerComponent("ShoppingList");
-
-let make = _children => {
-  let updateItems = (state: state, items: array(shoppingItem)) => {
-    ...state,
-    shoppingList: {
-      ...state.shoppingList,
-      items,
-    },
-  };
-  {
-    ...component,
-
-    initialState: () => {
-      isLoading: false,
-      error: None,
-      shoppingList: {
-        name: "",
-        status: "",
-        items: [||],
-      },
-    },
-
-    didMount: self => self.send(ShoppingListFetch),
-
-    reducer: (action, state) =>
-      switch (action) {
-      | ShoppingListFetch =>
-        ReasonReact.UpdateWithSideEffects(
-          {...state, isLoading: true},
-          self =>
-            Js.Promise.(
-              getShoppingList()
-              |> then_(result =>
-                   switch (result) {
-                   | Success(list) =>
-                     self.send(ShoppingListFetchSuccess(list)) |> resolve
-                   | Error => self.send(ShoppingListFetchError) |> resolve
-                   }
-                 )
-              |> ignore
-            ),
-        )
-
-      | ShoppingListFetchSuccess(list) =>
-        ReasonReact.Update({...state, isLoading: false, shoppingList: list})
-
-      | ShoppingListFetchError =>
-        ReasonReact.Update({
-          ...state,
-          isLoading: false,
-          error: Some("Failed to fetch shopping list"),
-        })
-
-      | AddShoppingItem =>
-        let newItem: shoppingItem = {product: "", note: "", assignee: None};
-
-        let items = Array.append(state.shoppingList.items, [|newItem|]);
-        ReasonReact.Update(updateItems(state, items));
-
-      | ChangeShoppingItemProperty(index, property, newValue) =>
-        let updateFn =
-          switch (property) {
-          | Product => (item => {...item, product: newValue})
-          | Note => (item => {...item, note: newValue})
-          };
-
-        let items =
-          updateWithIndex(state.shoppingList.items, updateFn, index);
-        ReasonReact.Update(updateItems(state, items));
-      },
-
-    render: self =>
-      <>
-        <h1> {ReasonReact.string("Shopping List")} </h1>
-        {self.state.isLoading ?
-           <span> {ReasonReact.string("...Loading")} </span> :
-           ReasonReact.null}
-        <div
-          className=Css.(
-            style([
-              media(Breakpoints.up(Md), [width(pct(60.0))]),
-              media(Breakpoints.up(Lg), [width(pct(40.0))]),
-            ])
-          )>
-          {self.state.shoppingList.items
-           |> Array.mapi((index, item) =>
-                <ShoppingItem
-                  key={string_of_int(index)}
-                  item
-                  onProductChange={value =>
-                    self.send(
-                      ChangeShoppingItemProperty(index, Product, value),
-                    )
-                  }
-                  onNoteChange={value =>
-                    self.send(ChangeShoppingItemProperty(index, Note, value))
-                  }
-                />
-              )
-           |> ReasonReact.array}
-        </div>
-        <button
-          onClick={_event => self.send(AddShoppingItem)}
-          disabled={self.state.isLoading}>
-          {ReasonReact.string("Add shopping item")}
-        </button>
-      </>,
-  };
+let make = (~list: shoppingList, ~onItemChange, _children) => {
+  ...component,
+  render: _self =>
+    <>
+      <div
+        className=Css.(
+          style([
+            media(Breakpoints.up(Md), [width(pct(60.0))]),
+            media(Breakpoints.up(Lg), [width(pct(40.0))]),
+          ])
+        )>
+        {list.items
+         |> Array.mapi((index, item) =>
+              <ShoppingItem item id=index onItemChange />
+            )
+         |> ReasonReact.array}
+      </div>
+    </>,
 };

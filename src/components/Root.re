@@ -4,5 +4,5 @@ let component = ReasonReact.statelessComponent("Root");
 
 let make = _children => {
   ...component,
-  render: _self => <PageContainer> <ShoppingList /> </PageContainer>,
+  render: _self => <PageContainer> <ShoppingListPage /> </PageContainer>,
 };
