@@ -6,12 +6,10 @@ let make = (~item: shoppingItem, ~onItemChange, ~id: int, _children) => {
   let handleProductChange = event => {
     let newItem = {...item, product: ReactEvent.Form.target(event)##value};
     onItemChange(id, newItem);
-    ();
   };
   let handleNoteChange = event => {
     let newItem = {...item, note: ReactEvent.Form.target(event)##value};
     onItemChange(id, newItem);
-    ();
   };
   {
     ...component,

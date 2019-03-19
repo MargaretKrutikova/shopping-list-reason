@@ -2,7 +2,12 @@ open Types;
 
 let component = ReasonReact.statelessComponent("ShoppingList");
 
-let make = (~list: shoppingList, ~onItemChange, _children) => {
+let make =
+    (
+      ~list: shoppingList,
+      ~onItemChange: (int, shoppingItem) => unit,
+      _children,
+    ) => {
   ...component,
   render: _self =>
     <>
@@ -15,7 +20,12 @@ let make = (~list: shoppingList, ~onItemChange, _children) => {
         )>
         {list.items
          |> Array.mapi((index, item) =>
-              <ShoppingItem item id=index onItemChange />
+              <ShoppingItem
+                key={string_of_int(index)}
+                item
+                id=index
+                onItemChange
+              />
             )
          |> ReasonReact.array}
       </div>
