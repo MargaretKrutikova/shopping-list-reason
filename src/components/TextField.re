@@ -1,6 +1,6 @@
-let component = ReasonReact.statelessComponent("Input");
+let component = ReasonReact.statelessComponent("TextField");
 
-let make = (~placeholder="", ~value, ~onChange, _children) => {
+let make = (~placeholder="", ~value, ~onChange, ~maxLength=200, _children) => {
   ...component,
   render: _self =>
     <div
@@ -18,6 +18,7 @@ let make = (~placeholder="", ~value, ~onChange, _children) => {
         placeholder
         value
         onChange
+        maxLength
         className=Css.(
           style([
             border(zero, none, transparent),
