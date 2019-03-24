@@ -54,9 +54,10 @@ let make = _children => {
               getShoppingList()
               |> then_(result =>
                    switch (result) {
-                   | Success(list) =>
+                   | Belt.Result.Ok(list) =>
                      self.send(ShoppingListFetchSuccess(list)) |> resolve
-                   | Error => self.send(ShoppingListFetchError) |> resolve
+                   | Belt.Result.Error () =>
+                     self.send(ShoppingListFetchError) |> resolve
                    }
                  )
               |> ignore

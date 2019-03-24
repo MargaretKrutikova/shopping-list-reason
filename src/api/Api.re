@@ -3,15 +3,11 @@
 open Types;
 open Decode;
 
-type apiShoppingListResponse =
-  | Success(shoppingList)
-  | Error;
-
-let getShoppingList = (): Js.Promise.t(apiShoppingListResponse) =>
+let getShoppingList = (): Js.Promise.t(Belt.Result.t(shoppingList, unit)) =>
   Js.Promise.(
     Axios.get(apiBaseUrl)
     |> then_(response =>
-         Success(response##data |> decodeShoppingList) |> resolve
+         Belt.Result.Ok(response##data |> decodeShoppingList) |> resolve
        )
-    |> catch(_ => Error |> resolve)
+    |> catch(_ => Belt.Result.Error() |> resolve)
   );
