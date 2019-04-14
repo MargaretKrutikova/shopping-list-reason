@@ -13,8 +13,8 @@ let make =
     <div
       className=Css.(
         style([
-          media(Breakpoints.up(Md), [width(pct(60.0))]),
-          media(Breakpoints.up(Lg), [width(pct(40.0))]),
+          media(Breakpoints.up(Md), [width(pct(70.0))]),
+          media(Breakpoints.up(Lg), [width(pct(50.0))]),
         ])
       )>
       {list.items

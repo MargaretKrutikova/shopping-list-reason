@@ -6,7 +6,7 @@ type assignee = {
 type shoppingItem = {
   product: string,
   note: string,
-  assignee: option(assignee),
+  assignee: option(string),
 };
 
 type shoppingList = {
