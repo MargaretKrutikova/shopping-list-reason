@@ -13,7 +13,8 @@ type gridType =
   | Container
   | Item;
 
-let make = (~type_: gridType, children) => {
+[@react.component]
+let make = (~type_: gridType, ~children) => {
   let getGridStyles = (): list(rule) => {
     switch (type_) {
     | Container =>
@@ -27,9 +28,5 @@ let make = (~type_: gridType, children) => {
       @ [media(Breakpoints.up(Md), gridItem(Theme.spacingPx.medium))]
     };
   };
-  {
-    ...component,
-    render: _self =>
-      <div className={Css.style(getGridStyles())}> ...children </div>,
-  };
+  <div className={Css.style(getGridStyles())}> children </div>;
 };
