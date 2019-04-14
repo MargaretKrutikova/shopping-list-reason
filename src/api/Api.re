@@ -3,11 +3,33 @@
 open Types;
 open Decode;
 
-let getShoppingList = (): Js.Promise.t(Belt.Result.t(shoppingList, unit)) =>
+let getCurrentListUrl = baseUrl => baseUrl ++ "/currentlist";
+let publishShoppingListUrl = baseUrl => baseUrl ++ "/rpc/publish";
+
+let getShoppingList = (): Js.Promise.t(shoppingList) =>
   Js.Promise.(
-    Axios.get(apiBaseUrl)
-    |> then_(response =>
-         Belt.Result.Ok(response##data |> decodeShoppingList) |> resolve
-       )
-    |> catch(_ => Belt.Result.Error() |> resolve)
+    Axios.get(getCurrentListUrl(apiBaseUrl))
+    |> then_(response => response##data |> decodeShoppingList |> resolve)
   );
+
+let updateShoppingList = (items: array(shoppingItem)) => {
+  let requestBody = {
+    "items":
+      items
+      |> Array.map(item =>
+           {
+             "product": item.product,
+             "note": item.note,
+             "assignee": item.assignee,
+           }
+         ),
+  };
+
+  Axios.postData(getCurrentListUrl(apiBaseUrl), requestBody)
+  |> Js.Promise.then_(_ => () |> Js.Promise.resolve);
+};
+
+let publishShoppingList = () =>
+  Axios.post(publishShoppingListUrl(apiBaseUrl))
+  |> Js.Promise.then_(_ => () |> Js.Promise.resolve);
+();

@@ -15,7 +15,7 @@ type shoppingItemProperty =
 type action =
   | ShoppingListFetch
   | ShoppingListFetchSuccess(shoppingList)
-  | ShoppingListFetchError
+  | ApiCallError(string)
   | AddShoppingItem
   | ChangeShoppingItem(int, shoppingItem);
 
@@ -35,10 +35,10 @@ let reducer = (state, action) => {
       isLoading: false,
       shoppingList: list,
     }
-  | ShoppingListFetchError => {
+  | ApiCallError(errorMessage) => {
       ...state,
       isLoading: false,
-      error: Some("Failed to fetch shopping list"),
+      error: Some(errorMessage),
     }
   | AddShoppingItem =>
     let newItem: shoppingItem = {product: "", note: "", assignee: None};
@@ -61,23 +61,43 @@ let initialState = () => {
   },
 };
 
+// TODO: Success/Failure actions instead of dispatch?
+let fetchShoppingList = (dispatch: action => unit) =>
+  Js.Promise.(
+    getShoppingList()
+    |> then_(result =>
+         dispatch(ShoppingListFetchSuccess(result)) |> resolve
+       )
+    |> catch(_ =>
+         dispatch(ApiCallError("Failed to fetch shopping list")) |> resolve
+       )
+  );
+
+let startShopping = (items, dispatch: action => unit) => {
+  dispatch(ShoppingListFetch);
+  Js.Promise.(
+    updateShoppingList(items)
+    |> then_(_ => publishShoppingList())
+    |> then_(_ => fetchShoppingList(dispatch))
+    |> catch(_ =>
+         dispatch(
+           ApiCallError(
+             "Network request failed - it's either update, fetch of publish :)",
+           ),
+         )
+         |> resolve
+       )
+  )
+  |> ignore;
+};
+
 [@react.component]
 let make = () => {
   let (state, dispatch) = React.useReducer(reducer, initialState());
+
   React.useEffect0(() => {
     dispatch(ShoppingListFetch);
-    Js.Promise.(
-      getShoppingList()
-      |> then_(result =>
-           switch (result) {
-           | Belt.Result.Ok(list) =>
-             dispatch(ShoppingListFetchSuccess(list)) |> resolve
-           | Belt.Result.Error () =>
-             dispatch(ShoppingListFetchError) |> resolve
-           }
-         )
-    )
-    |> ignore;
+    fetchShoppingList(dispatch) |> ignore;
     None;
   });
 
@@ -93,6 +113,11 @@ let make = () => {
       onClick={_event => dispatch(AddShoppingItem)}
       disabled={state.isLoading}>
       {ReasonReact.string("Add shopping item")}
+    </button>
+    <button
+      onClick={_ => startShopping(state.shoppingList.items, dispatch)}
+      disabled={state.isLoading}>
+      {ReasonReact.string("START")}
     </button>
   </>;
 };
