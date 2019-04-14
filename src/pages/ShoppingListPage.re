@@ -19,92 +19,80 @@ type action =
   | AddShoppingItem
   | ChangeShoppingItem(int, shoppingItem);
 
-let component = ReasonReact.reducerComponent("ShoppingList");
+let updateItems = (state: state, items: array(shoppingItem)) => {
+  ...state,
+  shoppingList: {
+    ...state.shoppingList,
+    items,
+  },
+};
 
-let make = _children => {
-  let updateItems = (state: state, items: array(shoppingItem)) => {
-    ...state,
-    shoppingList: {
-      ...state.shoppingList,
-      items,
-    },
-  };
-  {
-    ...component,
-
-    initialState: () => {
+let reducer = (state, action) => {
+  switch (action) {
+  | ShoppingListFetch => {...state, isLoading: true}
+  | ShoppingListFetchSuccess(list) => {
+      ...state,
       isLoading: false,
-      error: None,
-      shoppingList: {
-        name: "",
-        status: "",
-        items: [||],
-      },
-    },
-
-    didMount: self => self.send(ShoppingListFetch),
-
-    reducer: (action, state) =>
-      switch (action) {
-      | ShoppingListFetch =>
-        ReasonReact.UpdateWithSideEffects(
-          {...state, isLoading: true},
-          self =>
-            Js.Promise.(
-              getShoppingList()
-              |> then_(result =>
-                   switch (result) {
-                   | Belt.Result.Ok(list) =>
-                     self.send(ShoppingListFetchSuccess(list)) |> resolve
-                   | Belt.Result.Error () =>
-                     self.send(ShoppingListFetchError) |> resolve
-                   }
-                 )
-              |> ignore
-            ),
-        )
-
-      | ShoppingListFetchSuccess(list) =>
-        ReasonReact.Update({...state, isLoading: false, shoppingList: list})
-
-      | ShoppingListFetchError =>
-        ReasonReact.Update({
-          ...state,
-          isLoading: false,
-          error: Some("Failed to fetch shopping list"),
-        })
-
-      | AddShoppingItem =>
-        let newItem: shoppingItem = {product: "", note: "", assignee: None};
-
-        let items = Array.append(state.shoppingList.items, [|newItem|]);
-        ReasonReact.Update(updateItems(state, items));
-
-      | ChangeShoppingItem(index, newItem) =>
-        let updateFn = _item => newItem;
-
-        let items =
-          updateWithIndex(state.shoppingList.items, updateFn, index);
-        ReasonReact.Update(updateItems(state, items));
-      },
-
-    render: self =>
-      <>
-        <h1> {ReasonReact.string("Shopping List")} </h1>
-        {self.state.isLoading ?
-           <span> {ReasonReact.string("...Loading")} </span> :
-           ReasonReact.null}
-        <ShoppingList
-          list={self.state.shoppingList}
-          onItemChange={(id, item) =>
-            self.send(ChangeShoppingItem(id, item))
-          }
-        />
-        <button
-          onClick={_event => self.send(AddShoppingItem)}
-          disabled={self.state.isLoading}>
-          {ReasonReact.string("Add shopping item")}
-        </button>
-      </>,
+      shoppingList: list,
+    }
+  | ShoppingListFetchError => {
+      ...state,
+      isLoading: false,
+      error: Some("Failed to fetch shopping list"),
+    }
+  | AddShoppingItem =>
+    let newItem: shoppingItem = {product: "", note: "", assignee: None};
+    let items = Array.append(state.shoppingList.items, [|newItem|]);
+    updateItems(state, items);
+  | ChangeShoppingItem(index, newItem) =>
+    let updateFn = _item => newItem;
+    let items = updateWithIndex(state.shoppingList.items, updateFn, index);
+    updateItems(state, items);
   };
+};
+
+let initialState = () => {
+  isLoading: false,
+  error: None,
+  shoppingList: {
+    name: "",
+    status: "",
+    items: [||],
+  },
+};
+
+[@react.component]
+let make = () => {
+  let (state, dispatch) = React.useReducer(reducer, initialState());
+  React.useEffect0(() => {
+    dispatch(ShoppingListFetch);
+    Js.Promise.(
+      getShoppingList()
+      |> then_(result =>
+           switch (result) {
+           | Belt.Result.Ok(list) =>
+             dispatch(ShoppingListFetchSuccess(list)) |> resolve
+           | Belt.Result.Error () =>
+             dispatch(ShoppingListFetchError) |> resolve
+           }
+         )
+    )
+    |> ignore;
+    None;
+  });
+
+  <>
+    <h1> {ReasonReact.string("Shopping List")} </h1>
+    {state.isLoading
+       ? <span> {ReasonReact.string("...Loading")} </span> : ReasonReact.null}
+    <ShoppingList
+      list={state.shoppingList}
+      onItemChange={(id, item) => dispatch(ChangeShoppingItem(id, item))}
+    />
+    <button
+      onClick={_event => dispatch(AddShoppingItem)}
+      disabled={state.isLoading}>
+      {ReasonReact.string("Add shopping item")}
+    </button>
+  </>;
 };
