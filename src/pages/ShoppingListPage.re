@@ -17,7 +17,9 @@ type action =
   | ShoppingListFetchSuccess(shoppingList)
   | ApiCallError(string)
   | AddShoppingItem
-  | ChangeShoppingItem(int, shoppingItem);
+  | ChangeShoppingItem(int, shoppingItem)
+  | SetListStatus(listStatus)
+  | ToggleShoppingItem(int);
 
 let updateItems = (state: state, items: array(shoppingItem)) => {
   ...state,
@@ -35,19 +37,41 @@ let reducer = (state, action) => {
       isLoading: false,
       shoppingList: list,
     }
-  | ApiCallError(errorMessage) => {
-      ...state,
-      isLoading: false,
-      error: Some(errorMessage),
-    }
+  | ApiCallError(errorMessage) =>
+    Js.log(errorMessage);
+    {...state, isLoading: false, error: Some(errorMessage)};
   | AddShoppingItem =>
-    let newItem: shoppingItem = {product: "", note: "", assignee: None};
+    let newItem: shoppingItem = {
+      product: "",
+      note: "",
+      assignee: None,
+      isPurchased: false,
+    };
     let items = Array.append(state.shoppingList.items, [|newItem|]);
     updateItems(state, items);
   | ChangeShoppingItem(index, newItem) =>
-    let updateFn = _item => newItem;
-    let items = updateWithIndex(state.shoppingList.items, updateFn, index);
-    updateItems(state, items);
+    if (state.shoppingList.status != Editing) {
+      state;
+    } else {
+      let updateFn = _item => newItem;
+      let items = updateWithIndex(state.shoppingList.items, updateFn, index);
+      updateItems(state, items);
+    }
+  | ToggleShoppingItem(index) =>
+    if (state.shoppingList.status != Shopping) {
+      state;
+    } else {
+      let updateFn = _item => {..._item, isPurchased: !_item.isPurchased};
+      let items = updateWithIndex(state.shoppingList.items, updateFn, index);
+      updateItems(state, items);
+    }
+  | SetListStatus(status) => {
+      ...state,
+      shoppingList: {
+        ...state.shoppingList,
+        status,
+      },
+    }
   };
 };
 
@@ -56,7 +80,7 @@ let initialState = () => {
   error: None,
   shoppingList: {
     name: "",
-    status: "",
+    status: Editing,
     items: [||],
   },
 };
@@ -68,13 +92,13 @@ let fetchShoppingList = (dispatch: action => unit) =>
     |> then_(result =>
          dispatch(ShoppingListFetchSuccess(result)) |> resolve
        )
-    |> catch(_ =>
-         dispatch(ApiCallError("Failed to fetch shopping list")) |> resolve
-       )
+    |> catch(e => {
+         Js.log(e);
+         dispatch(ApiCallError("Failed to fetch shopping list")) |> resolve;
+       })
   );
 
 let startShopping = (items, dispatch: action => unit) => {
-  dispatch(ShoppingListFetch);
   Js.Promise.(
     updateShoppingList(items)
     |> then_(_ => publishShoppingList())
@@ -87,6 +111,8 @@ let startShopping = (items, dispatch: action => unit) => {
          )
          |> resolve
        )
+    // TODO: Remove when the API is in place?
+    |> then_(_ => dispatch(SetListStatus(Shopping)) |> resolve)
   )
   |> ignore;
 };
@@ -105,10 +131,20 @@ let make = () => {
     <h1> {ReasonReact.string("Shopping List")} </h1>
     {state.isLoading
        ? <span> {ReasonReact.string("...Loading")} </span> : ReasonReact.null}
-    <ShoppingList
-      list={state.shoppingList}
-      onItemChange={(id, item) => dispatch(ChangeShoppingItem(id, item))}
-    />
+    {switch (state.shoppingList.status) {
+     | Shopping =>
+       <LiveShoppingList
+         list={state.shoppingList}
+         onItemToggle={id => dispatch(ToggleShoppingItem(id))}
+       />
+     | Editing =>
+       <ShoppingList
+         list={state.shoppingList}
+         onItemChange={(id, item) => dispatch(ChangeShoppingItem(id, item))}
+       />
+     | Completed =>
+       <div> {ReasonReact.string("[COMPLETED PLACEHOLDER]")} </div>
+     }}
     <button
       onClick={_event => dispatch(AddShoppingItem)}
       disabled={state.isLoading}>
