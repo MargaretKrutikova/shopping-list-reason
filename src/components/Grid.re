@@ -1,32 +1,49 @@
 open Css;
 
-let gridContainer = (spacing: int) => [
-  width(`calc((`add, pct(100.0), px(spacing)))),
-  margin(px(- spacing / 2)),
-];
+module Styles = {
+  open Css;
 
-let gridItem = (spacing: int) => [padding(px(spacing / 2))];
+  let containerSpacing = (spacing: int) => [
+    width(`calc((`add, pct(100.0), px(spacing)))),
+    margin(px(- spacing / 2)),
+  ];
 
-let component = ReasonReact.statelessComponent("Grid");
+  let itemSpacing = (spacing: int) => [padding(px(spacing / 2))];
+
+  let gridContainer =
+    style(
+      [display(`flex)]
+      @ containerSpacing(Theme.spacingPx.small)
+      @ [
+        media(Breakpoints.up(Md), containerSpacing(Theme.spacingPx.medium)),
+      ],
+    );
+
+  let gridItem =
+    style(
+      [flexGrow(1.0), flexShrink(1), flexBasis(auto)]
+      @ itemSpacing(Theme.spacingPx.small)
+      @ [media(Breakpoints.up(Md), itemSpacing(Theme.spacingPx.medium))],
+    );
+};
 
 type gridType =
   | Container
   | Item;
 
-[@react.component]
-let make = (~type_: gridType, ~children) => {
-  let getGridStyles = (): list(rule) => {
-    switch (type_) {
-    | Container =>
-      [display(`flex)]
-      @ gridContainer(Theme.spacingPx.small)
-      @ [media(Breakpoints.up(Md), gridContainer(Theme.spacingPx.medium))]
-
-    | Item =>
-      [flexGrow(1.0), flexShrink(1), flexBasis(auto)]
-      @ gridItem(Theme.spacingPx.small)
-      @ [media(Breakpoints.up(Md), gridItem(Theme.spacingPx.medium))]
-    };
+let getGridStyles = (type_: gridType) => {
+  switch (type_) {
+  | Container => Styles.gridContainer
+  | Item => Styles.gridItem
   };
-  <div className={Css.style(getGridStyles())}> children </div>;
+};
+
+let component = ReasonReact.statelessComponent("Grid");
+
+[@react.component]
+let make = (~type_: gridType, ~children, ~className=?) => {
+  let gridClassName = getGridStyles(type_);
+  let customClassName = Belt.Option.getWithDefault(className, "");
+
+  <div className={j|$gridClassName $customClassName|j}> children </div>;
 };
