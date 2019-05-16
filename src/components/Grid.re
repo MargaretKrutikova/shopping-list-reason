@@ -12,29 +12,41 @@ module Styles = {
 
   let gridContainer =
     style(
-      [display(`flex)]
+      [display(`flex), flexWrap(`wrap), boxSizing(`borderBox)]
       @ containerSpacing(Theme.spacingPx.small)
       @ [
         media(Breakpoints.up(Md), containerSpacing(Theme.spacingPx.medium)),
       ],
     );
 
-  let gridItem =
+  let gridItem = (columns: int) => {
+    let widthPct =
+      float_of_int(columns)
+      /. 12.0
+      *. float_of_int(Js.Math.pow_int(10, 7))
+      /. float_of_int(Js.Math.pow_int(10, 5));
     style(
-      [flexGrow(1.0), flexShrink(1), flexBasis(auto)]
+      [
+        flexGrow(0.0),
+        flexShrink(1),
+        flexBasis(pct(widthPct)),
+        maxWidth(pct(widthPct)),
+        boxSizing(`borderBox),
+      ]
       @ itemSpacing(Theme.spacingPx.small)
       @ [media(Breakpoints.up(Md), itemSpacing(Theme.spacingPx.medium))],
     );
+  };
 };
 
 type gridType =
   | Container
-  | Item;
+  | Item(int);
 
 let getGridStyles = (type_: gridType) => {
   switch (type_) {
   | Container => Styles.gridContainer
-  | Item => Styles.gridItem
+  | Item(width) => Styles.gridItem(width)
   };
 };
 
