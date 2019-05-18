@@ -7,8 +7,7 @@ let decodeShoppingItem = (json): shoppingItem => {
     product: json |> field("product", string),
     note: json |> optional(field("note", string)) |> defaultIfNone(""),
     assignee: json |> optional(field("assignee", string)),
-    // isPurchased: json |> field("isPurchased", bool),
-    isPurchased: false // TODO
+    isPurchased: json |> field("isPurchased", bool),
   };
 };
 
