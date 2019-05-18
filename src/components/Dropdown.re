@@ -2,49 +2,91 @@ open ClickOutside;
 
 let str = ReasonReact.string;
 
+type alignType =
+  | Left
+  | Right
+  | Center;
+
 module Styles = {
   open Css;
 
-  let dropdown = style([minWidth(px(100)), userSelect(`none)]);
+  let triangleWidthPx = 9;
+  let alignShiftPx = Theme.spacingPx.small;
+  let optionsTopPx = 12;
+
+  let getOptionsContainerAlign = (align: alignType) =>
+    switch (align) {
+    | Center => `center
+    | Left => `flexStart
+    | Right => `flexEnd
+    };
+
+  let getOptionsAlign = (align: alignType) =>
+    switch (align) {
+    | Center => []
+    | Left => [left(px(- alignShiftPx))]
+    | Right => [right(px(- alignShiftPx))]
+    };
+
+  let dropdown = style([position(relative), userSelect(`none)]);
   let dropdownButton =
     style([border(px(1), solid, `rgba((0, 0, 0, 0.4))), padding(px(4))]);
 
-  let optionsContainer =
-    style([position(relative), display(`flex), justifyContent(`center)]);
-  let options =
-    style([
-      position(absolute),
-      top(px(0)),
-      padding2(~h=px(0), ~v=px(4)),
-      border(px(1), solid, `rgba((0, 0, 0, 0.4))),
-      width(pct(120.0)),
-      boxSizing(borderBox),
-      background(white),
-      marginTop(px(Theme.spacingPx.small)),
-      borderRadius(px(3)),
-      before([
+  let optionsContainer = align =>
+    style([position(relative), width(pct(100.0))]);
+
+  let options = (align: alignType) =>
+    merge([
+      style([
         position(absolute),
-        top(px(-16)),
-        left(`calc((`sub, pct(50.0), px(8)))),
-        display(`inlineBlock),
-        contentRule(""),
-        border(px(8), solid, `transparent),
-        borderBottomColor(`rgba((200, 200, 200, 1.0))),
+        top(px(0)),
+        minWidth(px(100)),
+        padding2(~h=px(0), ~v=px(Theme.spacingPx.xsmall)),
+        border(px(1), solid, `rgba((200, 200, 200, 1.0))),
+        boxSizing(borderBox),
+        background(white),
+        marginTop(px(optionsTopPx)),
+        borderRadius(px(3)),
+        zIndex(1),
       ]),
-      after([
+      style(getOptionsAlign(align)),
+    ]);
+
+  let triangle = align =>
+    merge([
+      style([
+        width(pct(100.0)),
         position(absolute),
-        top(px(-14)),
-        left(`calc((`sub, pct(50.0), px(7)))),
-        display(`inlineBlock),
-        contentRule(""),
-        border(px(7), solid, `transparent),
-        borderBottomColor(`rgba((255, 255, 255, 1.0))),
+        top(px(0)),
+        boxSizing(borderBox),
+        marginTop(px(optionsTopPx + 1)),
+        zIndex(2),
+        before([
+          position(absolute),
+          left(pct(50.0)),
+          transform(`translate((pct(-50.0), px(0)))),
+          top(px(- triangleWidthPx * 2)),
+          display(`inlineBlock),
+          contentRule(""),
+          border(px(triangleWidthPx), solid, `transparent),
+          borderBottomColor(`rgba((200, 200, 200, 1.0))),
+        ]),
+        after([
+          position(absolute),
+          top(px(- (triangleWidthPx * 2 - 2))),
+          left(`calc((`add, pct(50.0), px(0)))),
+          transform(`translate((pct(-50.0), px(0)))),
+          display(`inlineBlock),
+          contentRule(""),
+          border(px(triangleWidthPx - 1), solid, `transparent),
+          borderBottomColor(white),
+        ]),
       ]),
     ]);
 
   let optionItem = isSelected =>
     style([
-      padding2(~h=px(8), ~v=px(4)),
+      padding2(~h=px(Theme.spacingPx.small), ~v=px(Theme.spacingPx.xsmall)),
       boxSizing(borderBox),
       backgroundColor(isSelected ? `rgba((0, 0, 0, 0.4)) : transparent),
       hover([
@@ -72,7 +114,13 @@ let reducer = (state, action) => {
 
 [@react.component]
 let make =
-    (~selected="", ~options: array(string), ~selectOption: string => unit) => {
+    (
+      ~selected="",
+      ~options: array(string),
+      ~selectOption: string => unit,
+      ~renderDropdownButton=?,
+      ~align=Center,
+    ) => {
   let (state, dispatch) = React.useReducer(reducer, {isOpen: false});
   let select = (item: string) => {
     selectOption(item);
@@ -80,14 +128,20 @@ let make =
   };
 
   let dropdownRef = useClickOutside(_ => dispatch(Close));
+  let toggleOpen = _ => dispatch(Toggle);
 
   <div className=Styles.dropdown ref={ReactDOMRe.Ref.domRef(dropdownRef)}>
-    <div onClick={_ => dispatch(Toggle)} className=Styles.dropdownButton>
-      {ReasonReact.string(selected != "" ? selected : "Select value")}
-    </div>
+    {switch (renderDropdownButton) {
+     | Some(render) => render(toggleOpen)
+     | None =>
+       <div onClick=toggleOpen className=Styles.dropdownButton>
+         {ReasonReact.string(selected != "" ? selected : "Select value")}
+       </div>
+     }}
     {state.isOpen
-       ? <div className=Styles.optionsContainer>
-           <div className=Styles.options>
+       ? <div className={Styles.optionsContainer(align)}>
+           <div className={Styles.triangle(align)} />
+           <div className={Styles.options(align)}>
              {options->Belt.Array.mapWithIndex((index, item) =>
                 <div
                   key={string_of_int(index)}
