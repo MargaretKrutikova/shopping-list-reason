@@ -5,6 +5,7 @@ type themeSpacing = {
   small: int,
   smedium: int,
   medium: int,
+  mlarge: int,
   large: int,
   xlarge: int,
 };
@@ -30,6 +31,7 @@ let spacingPx: themeSpacing = {
   small: spacingUnitPx * 2,
   smedium: spacingUnitPx * 3,
   medium: spacingUnitPx * 4,
+  mlarge: spacingUnitPx * 5,
   large: spacingUnitPx * 6,
   xlarge: spacingUnitPx * 7,
 };
