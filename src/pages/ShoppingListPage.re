@@ -13,13 +13,13 @@ type shoppingItemProperty =
   | Note;
 
 type action =
-  | ShoppingListFetch
+  | ApiCallStarted
   | ShoppingListFetchSuccess(shoppingList)
   | ApiCallError(string)
   | AddShoppingItem
   | ChangeShoppingItem(int, shoppingItem)
   | SetListStatus(listStatus)
-  | ToggleShoppingItem(int);
+  | ToggleShoppingItemPurchased(int);
 
 let updateItems = (state: state, items: array(shoppingItem)) => {
   ...state,
@@ -31,7 +31,7 @@ let updateItems = (state: state, items: array(shoppingItem)) => {
 
 let reducer = (state, action) => {
   switch (action) {
-  | ShoppingListFetch => {...state, isLoading: true}
+  | ApiCallStarted => {...state, isLoading: true}
   | ShoppingListFetchSuccess(list) => {
       ...state,
       isLoading: false,
@@ -57,11 +57,11 @@ let reducer = (state, action) => {
       let items = updateWithIndex(state.shoppingList.items, updateFn, index);
       updateItems(state, items);
     }
-  | ToggleShoppingItem(index) =>
+  | ToggleShoppingItemPurchased(index) =>
     if (state.shoppingList.status != Shopping) {
       state;
     } else {
-      let updateFn = _item => {..._item, isPurchased: !_item.isPurchased};
+      let updateFn = item => {...item, isPurchased: !item.isPurchased};
       let items = updateWithIndex(state.shoppingList.items, updateFn, index);
       updateItems(state, items);
     }
@@ -99,6 +99,7 @@ let fetchShoppingList = (dispatch: action => unit) =>
   );
 
 let startShopping = (items, dispatch: action => unit) => {
+  dispatch(ApiCallStarted);
   Js.Promise.(
     updateShoppingList(items)
     |> then_(_ => publishShoppingList())
@@ -122,7 +123,7 @@ let make = () => {
   let (state, dispatch) = React.useReducer(reducer, initialState());
 
   React.useEffect0(() => {
-    dispatch(ShoppingListFetch);
+    dispatch(ApiCallStarted);
     fetchShoppingList(dispatch) |> ignore;
     None;
   });
@@ -133,27 +134,39 @@ let make = () => {
        ? <span> {ReasonReact.string("...Loading")} </span> : ReasonReact.null}
     {switch (state.shoppingList.status) {
      | Shopping =>
-       <LiveShoppingList
-         list={state.shoppingList}
-         onItemToggle={id => dispatch(ToggleShoppingItem(id))}
-       />
+       <>
+         <LiveShoppingList
+           // TODO: disabled={!state.isLoading}
+           list={state.shoppingList}
+           onItemToggle={id => dispatch(ToggleShoppingItemPurchased(id))}
+         />
+         <button onClick={_ => dispatch(SetListStatus(Editing))}>
+           // TODO: Change status on the server?
+            {ReasonReact.string("Edit")} </button>
+         <button> {ReasonReact.string("Complete")} </button>
+       </>
      | Editing =>
-       <ShoppingList
-         list={state.shoppingList}
-         onItemChange={(id, item) => dispatch(ChangeShoppingItem(id, item))}
-       />
+       <>
+         <ShoppingList
+           // TODO: disabled={!state.isLoading}
+           list={state.shoppingList}
+           onItemChange={(id, item) =>
+             dispatch(ChangeShoppingItem(id, item))
+           }
+         />
+         <button
+           onClick={_event => dispatch(AddShoppingItem)}
+           disabled={state.isLoading}>
+           {ReasonReact.string("Add shopping item")}
+         </button>
+         <button
+           onClick={_ => startShopping(state.shoppingList.items, dispatch)}
+           disabled={state.isLoading}>
+           {ReasonReact.string("START")}
+         </button>
+       </>
      | Completed =>
        <div> {ReasonReact.string("[COMPLETED PLACEHOLDER]")} </div>
      }}
-    <button
-      onClick={_event => dispatch(AddShoppingItem)}
-      disabled={state.isLoading}>
-      {ReasonReact.string("Add shopping item")}
-    </button>
-    <button
-      onClick={_ => startShopping(state.shoppingList.items, dispatch)}
-      disabled={state.isLoading}>
-      {ReasonReact.string("START")}
-    </button>
   </>;
 };
