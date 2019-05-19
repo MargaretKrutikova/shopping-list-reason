@@ -28,3 +28,11 @@ let decodeShoppingList = (json): shoppingList => {
     items: json |> field("items", array(decodeShoppingItem)),
   };
 };
+
+let decodeAssignees = (json): array(assignee) => {
+  json
+  |> at(
+       ["assignees"],
+       array(assigneeJson => {name: assigneeJson |> field("name", string)}),
+     );
+};
