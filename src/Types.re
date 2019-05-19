@@ -1,7 +1,4 @@
-type assignee = {
-  id: int,
-  name: string,
-};
+type assignee = {name: string};
 
 type shoppingItem = {
   product: string,
@@ -20,3 +17,5 @@ type shoppingList = {
   status: listStatus,
   items: array(shoppingItem),
 };
+
+exception UnhandledPromise;

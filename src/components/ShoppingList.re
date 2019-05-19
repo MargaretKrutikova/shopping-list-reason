@@ -1,7 +1,12 @@
 open Types;
 
 [@react.component]
-let make = (~list: shoppingList, ~onItemChange: (int, shoppingItem) => unit) => {
+let make =
+    (
+      ~list: shoppingList,
+      ~onItemChange: (int, shoppingItem) => unit,
+      ~assignees: array(assignee),
+    ) => {
   <div
     className=Css.(
       style([
@@ -16,6 +21,7 @@ let make = (~list: shoppingList, ~onItemChange: (int, shoppingItem) => unit) => 
             item
             id=index
             onItemChange
+            assignees
           />
         )
      |> ReasonReact.array}

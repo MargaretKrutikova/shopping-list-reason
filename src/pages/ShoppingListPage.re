@@ -175,6 +175,7 @@ let make = () => {
          <ShoppingList
            // TODO: disabled={!state.isLoading}
            list={state.shoppingList}
+           assignees={state.assignees}
            onItemChange={(id, item) =>
              dispatch(ChangeShoppingItem(id, item))
            }
