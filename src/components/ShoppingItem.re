@@ -37,9 +37,10 @@ let make =
     let newItem = {...item, note: ReactEvent.Form.target(event)##value};
     onItemChange(id, newItem);
   };
-  // TODO: test, remove later
-  let (assignee, setAssignee) = React.useState(() => "");
-  let selectOption = o => setAssignee(_ => o);
+  let handleAssigneeChange = assignee => {
+    let newItem = {...item, assignee: Some(assignee)};
+    onItemChange(id, newItem);
+  };
 
   let assigneeOptions = assignees->Belt.Array.map(assignee => assignee.name);
 
@@ -62,15 +63,15 @@ let make =
     </Grid>
     <Grid type_={Item(Auto)} className=Styles.gridItem>
       <Dropdown
-        selected=assignee
+        selected={item.assignee}
         options=assigneeOptions
         align=Right
-        selectOption
+        selectOption=handleAssigneeChange
         renderDropdownButton={toggle =>
           <button onClick=toggle className=Styles.assigneeBtn>
-            {switch (assignee) {
-             | "" => ReasonReact.string("+")
-             | value =>
+            {switch (item.assignee) {
+             | None => ReasonReact.string("+")
+             | Some(value) =>
                value
                |> getAssigneeLetter
                |> String.uppercase

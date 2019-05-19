@@ -32,8 +32,7 @@ module Styles = {
   let dropdownButton =
     style([border(px(1), solid, `rgba((0, 0, 0, 0.4))), padding(px(4))]);
 
-  let optionsContainer = align =>
-    style([position(relative), width(pct(100.0))]);
+  let optionsContainer = style([position(relative), width(pct(100.0))]);
 
   let options = (align: alignType) =>
     merge([
@@ -58,7 +57,7 @@ module Styles = {
       style(getOptionsAlign(align)),
     ]);
 
-  let triangle = align =>
+  let triangle =
     merge([
       style([
         width(pct(100.0)),
@@ -121,7 +120,7 @@ let reducer = (state, action) => {
 [@react.component]
 let make =
     (
-      ~selected="",
+      ~selected: option(string),
       ~options: array(string),
       ~selectOption: string => unit,
       ~renderDropdownButton=?,
@@ -141,18 +140,25 @@ let make =
      | Some(render) => render(toggleOpen)
      | None =>
        <div onClick=toggleOpen className=Styles.dropdownButton>
-         {ReasonReact.string(selected != "" ? selected : "Select value")}
+         {switch (selected) {
+          | Some(value) => str(value)
+          | None => str("")
+          }}
        </div>
      }}
     {state.isOpen
-       ? <div className={Styles.optionsContainer(align)}>
-           <div className={Styles.triangle(align)} />
+       ? <div className=Styles.optionsContainer>
+           <div className=Styles.triangle />
            <div className={Styles.options(align)}>
              {options->Belt.Array.mapWithIndex((index, item) =>
                 <div
                   key={string_of_int(index)}
                   onClick={_ => select(item)}
-                  className={Styles.optionItem(item == selected)}>
+                  className={Styles.optionItem(
+                    selected->Belt.Option.mapWithDefault(false, val_ =>
+                      val_ === item
+                    ),
+                  )}>
                   {item |> ReasonReact.string}
                 </div>
               )
