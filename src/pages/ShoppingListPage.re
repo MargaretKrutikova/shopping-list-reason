@@ -4,6 +4,7 @@ open Types;
 
 type state = {
   shoppingList,
+  assignees: array(assignee),
   isLoading: bool,
   error: option(string),
 };
@@ -15,6 +16,7 @@ type shoppingItemProperty =
 type action =
   | ApiCallStarted
   | ShoppingListFetchSuccess(shoppingList)
+  | AssigneesFetchSuccess(array(assignee))
   | ApiCallError(string)
   | AddShoppingItem
   | ChangeShoppingItem(int, shoppingItem)
@@ -37,6 +39,7 @@ let reducer = (state, action) => {
       isLoading: false,
       shoppingList: list,
     }
+  | AssigneesFetchSuccess(assignees) => {...state, assignees}
   | ApiCallError(errorMessage) =>
     Js.log(errorMessage);
     {...state, isLoading: false, error: Some(errorMessage)};
@@ -78,12 +81,23 @@ let reducer = (state, action) => {
 let initialState = () => {
   isLoading: false,
   error: None,
+  assignees: [||],
   shoppingList: {
     name: "",
     status: Editing,
     items: [||],
   },
 };
+
+let fetchAssignees = (dispatch: action => unit) =>
+  Js.Promise.(
+    getAssignees()
+    |> then_(result => dispatch(AssigneesFetchSuccess(result)) |> resolve)
+    |> catch(e => {
+         Js.log(e);
+         raise(UnhandledPromise);
+       })
+  );
 
 // TODO: Success/Failure actions instead of dispatch?
 let fetchShoppingList = (dispatch: action => unit) =>
@@ -94,7 +108,7 @@ let fetchShoppingList = (dispatch: action => unit) =>
        )
     |> catch(e => {
          Js.log(e);
-         dispatch(ApiCallError("Failed to fetch shopping list")) |> resolve;
+         raise(UnhandledPromise);
        })
   );
 
@@ -124,7 +138,18 @@ let make = () => {
 
   React.useEffect0(() => {
     dispatch(ApiCallStarted);
-    fetchShoppingList(dispatch) |> ignore;
+    Js.Promise.(
+      all2((fetchShoppingList(dispatch), fetchAssignees(dispatch)))
+      |> then_(_ => resolve())
+      |> catch(e => {
+           Js.log(e);
+           dispatch(
+             ApiCallError("Failed to fetch shopping list or assignees"),
+           )
+           |> resolve;
+         })
+    )
+    |> ignore;
     None;
   });
 
@@ -150,6 +175,7 @@ let make = () => {
          <ShoppingList
            // TODO: disabled={!state.isLoading}
            list={state.shoppingList}
+           assignees={state.assignees}
            onItemChange={(id, item) =>
              dispatch(ChangeShoppingItem(id, item))
            }

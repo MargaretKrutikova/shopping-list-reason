@@ -11,18 +11,20 @@ let make = (~list: shoppingList, ~onItemToggle: int => unit) => {
     )>
     {list.items
      |> Array.mapi((index, item) =>
-          <Grid type_=Container key={string_of_int(index)}>
-            <Grid type_=Item>
+          <Grid type_={Container(`nowrap)} key={string_of_int(index)}>
+            <Grid type_={Item(Grow)}>
               <span> {ReasonReact.string(item.product)} </span>
             </Grid>
-            <Grid type_=Item>
+            <Grid type_={Item(Grow)}>
               <span> {ReasonReact.string(item.note)} </span>
             </Grid>
-            <input
-              type_="checkbox"
-              checked={item.isPurchased}
-              onChange={_ => onItemToggle(index)}
-            />
+            <Grid type_={Item(Auto)}>
+              <input
+                type_="checkbox"
+                checked={item.isPurchased}
+                onChange={_ => onItemToggle(index)}
+              />
+            </Grid>
           </Grid>
         )
      |> ReasonReact.array}
