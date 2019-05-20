@@ -127,7 +127,7 @@ let make =
       ~align=Center,
     ) => {
   let (state, dispatch) = React.useReducer(reducer, {isOpen: false});
-  let select = (item: string) => {
+  let selectAndClose = (item: string) => {
     selectOption(item);
     dispatch(Close);
   };
@@ -153,13 +153,13 @@ let make =
              {options->Belt.Array.mapWithIndex((index, item) =>
                 <div
                   key={string_of_int(index)}
-                  onClick={_ => select(item)}
+                  onClick={_ => selectAndClose(item)}
                   className={Styles.optionItem(
                     selected->Belt.Option.mapWithDefault(false, val_ =>
                       val_ === item
                     ),
                   )}>
-                  {item |> ReasonReact.string}
+                  {item |> str}
                 </div>
               )
               |> ReasonReact.array}
