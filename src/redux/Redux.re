@@ -1,67 +1,57 @@
 open Store;
 
 module type Config = {
-  type context;
-  let defaultValue: context;
+  type state;
+  type action;
+  let defaultValue: Store.t(action, state);
 };
 
-module ReduxContext = {
-  type state = {count: int};
-  type action =
-    | Increment
-    | Decrement
-    | NoChange;
-
-  let reducer = state =>
-    fun
-    | Increment => {count: state.count + 1}
-    | Decrement => {count: state.count - 1}
-    | NoChange => state;
-
-  type store = Store.t(action, state);
-
-  let appStore = Store.create(~reducer, ~preloadedState={count: 0}, ());
-
-  let context = React.createContext(appStore);
+module ReduxContext = (Config: Config) => {
+  let context = React.createContext(Config.defaultValue);
 
   module Provider = {
     let make = context->React.Context.provider;
 
     [@bs.obj]
     external makeProps:
-      (~value: store, ~children: React.element, ~key: string=?, unit) =>
+      (
+        ~value: Store.t('a, 's),
+        ~children: React.element,
+        ~key: string=?,
+        unit
+      ) =>
       {
         .
-        "value": store,
+        "value": Store.t('a, 's),
         "children": React.element,
       } =
       "";
   };
-};
 
-let useSelector = selector => {
-  let store = React.useContext(ReduxContext.context);
+  let useSelector = selector => {
+    let store = React.useContext(context);
 
-  let (syncedState, setSyncedState) =
-    React.useState(() => selector(Store.getState(store)));
+    let (syncedState, setSyncedState) =
+      React.useState(() => selector(Store.getState(store)));
 
-  React.useEffect1(
-    () => {
-      let unsubscribe =
-        Store.subscribe(store, () =>
-          setSyncedState(_ => selector(Store.getState(store)))
-        );
+    React.useEffect1(
+      () => {
+        let unsubscribe =
+          Store.subscribe(store, () =>
+            setSyncedState(_ => selector(Store.getState(store)))
+          );
 
-      Some(unsubscribe);
-    },
-    [|store|],
-  );
+        Some(unsubscribe);
+      },
+      [|store|],
+    );
 
-  syncedState;
-};
+    syncedState;
+  };
 
-let useDispatch = () => {
-  let store = React.useContext(ReduxContext.context);
+  let useDispatch = () => {
+    let store = React.useContext(context);
 
-  Store.dispatch(store);
+    Store.dispatch(store);
+  };
 };

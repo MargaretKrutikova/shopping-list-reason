@@ -2,8 +2,8 @@ open Redux;
 
 [@react.component]
 let make = () => {
-  let counter = useSelector(state => state.count);
-  let dispatch = useDispatch();
+  let counter = App.Store.useSelector(state => state.count);
+  let dispatch = App.Store.useDispatch();
 
   <div>
     <button onClick={_ => dispatch(Increment)}>
