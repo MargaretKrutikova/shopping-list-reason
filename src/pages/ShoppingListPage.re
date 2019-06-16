@@ -155,6 +155,8 @@ let make = () => {
 
   <>
     <h1> {ReasonReact.string("Shopping List")} </h1>
+    <div className=Css.(style([height(px(50))]))> <Counter /> </div>
+    <div className=Css.(style([height(px(50))]))> <Counter /> </div>
     {state.isLoading
        ? <span> {ReasonReact.string("...Loading")} </span> : ReasonReact.null}
     {switch (state.shoppingList.status) {

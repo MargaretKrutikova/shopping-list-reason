@@ -132,7 +132,14 @@ let make =
     dispatch(Close);
   };
 
-  let dropdownRef = useClickOutside(_ => dispatch(Close));
+  // if not checking for state.isOpen, will re-render every time the redux state
+  // changes. TODO: investigate why.
+  let close = _ =>
+    if (state.isOpen) {
+      dispatch(Close);
+    };
+
+  let dropdownRef = useClickOutside(close);
   let toggleOpen = _ => dispatch(Toggle);
 
   <div className=Styles.dropdown ref={ReactDOMRe.Ref.domRef(dropdownRef)}>
